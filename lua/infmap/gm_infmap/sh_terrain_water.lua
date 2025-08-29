@@ -7,7 +7,7 @@ local function inWater(pos)
     return pos[3] < InfMap.water_height
 end
 
-// water screenspace overlay
+-- water screenspace overlay
 local changedWater = false
 hook.Add("RenderScreenspaceEffects", "infmap_water_pp", function()
 	if inWater(InfMap.unlocalize_vector(EyePos(), LocalPlayer().CHUNK_OFFSET)) then
@@ -26,14 +26,14 @@ hook.Add("RenderScreenspaceEffects", "infmap_water_pp", function()
     end
 end)
 
-// swim code yoinked from gwater, thanks again kodya
-// player animations
+-- swim code yoinked from gwater, thanks again kodya
+-- player animations
 hook.Add("CalcMainActivity", "infmap_water_swimming", function(ply)
 	if !inWater(ply:GetPos()) or ply:IsOnGround() or ply:InVehicle() then return end
 	return ACT_MP_SWIM, -1
 end)
 
-// main movement
+-- main movement
 hook.Add("Move", "infmap_water_swimming", function(ply, move)
     if !inWater(ply:GetPos()) then return end
 
@@ -63,7 +63,7 @@ hook.Add("Move", "infmap_water_swimming", function(ply, move)
 	move:SetVelocity(vel * 0.99)
 end)
 
-// secondary, final movement
+-- secondary, final movement
 hook.Add("FinishMove", "infmap_water_swimming", function(ply, move)
 	if !inWater(ply:GetPos()) then return end
 	local vel = move:GetVelocity()
@@ -74,7 +74,7 @@ hook.Add("FinishMove", "infmap_water_swimming", function(ply, move)
 	move:SetVelocity(vel)
 end)
 
-// serverside stuff now
+-- serverside stuff now
 if CLIENT then
     local waterMatrix1 = Matrix()
     waterMatrix1:SetScale(Vector(100000, 100000, 1))
@@ -131,14 +131,14 @@ end
 
 hook.Add("PlayerFootstep", "infmap_water_footsteps", function(ply, pos, foot, sound, volume, rf)
     if inWater(ply:GetPos()) then 
-        ply:EmitSound(foot == 0 and "Water.StepLeft" or "Water.StepRight", nil, nil, volume, CHAN_BODY)     // volume doesnt work for some reason.. oh well
+        ply:EmitSound(foot == 0 and "Water.StepLeft" or "Water.StepRight", nil, nil, volume, CHAN_BODY)     -- volume doesnt work for some reason.. oh well
         return true
     end
 end )
 
-// no fall damage in fake water
+-- no fall damage in fake water
 hook.Add("GetFallDamage", "infmap_water_falldmg", function(ply, speed)
-    // for some reason player position isnt fully accurate when this is called
+    -- for some reason player position isnt fully accurate when this is called
     local tr = util.TraceHull({
         start = ply:GetPos(),
         endpos = ply:GetPos() + ply:GetVelocity(),
@@ -173,7 +173,7 @@ if SERVER then
         local entities = ents.FindByClass("prop_*")
         for _, prop in ipairs(entities) do
             local phys = prop:GetPhysicsObject()
-            // extinguish if in water
+            -- extinguish if in water
             if inWater(prop:GetPos()) and prop:IsOnFire() then prop:Extinguish() end
 
             if !phys:IsValid() or phys:IsAsleep() then continue end
@@ -183,13 +183,13 @@ if SERVER then
                 local mins = prop:OBBMins()
                 local maxs = prop:OBBMaxs()
 
-                // do not calculate object, we know it is too far and not near the water
+                -- do not calculate object, we know it is too far and not near the water
                 local p = prop:GetPos()[3] - 1
                 if p - math.abs(mins[3]) > waterHeight and p - math.abs(maxs[3]) > waterHeight then
                     continue
                 end
 
-                // why is the airboat size fucked?
+                -- why is the airboat size fucked?
                 if is_airboat then 
                     mins = mins * 0.5
                     maxs = maxs * 0.5
@@ -197,7 +197,7 @@ if SERVER then
                     maxs[3] = 0
                 end
 
-                // so many points
+                -- so many points
                 positions[1] = Vector(mins[1], mins[2], mins[3])
                 positions[2] = Vector(mins[1], mins[2], maxs[3])
                 positions[3] = Vector(mins[1], maxs[2], mins[3])
@@ -214,14 +214,14 @@ if SERVER then
                     if inWater(world_pos) then
                         if is_airboat then
                             phys:ApplyForceOffset(Vector(0, 0, phys:GetMass() * math.min(((waterHeight - world_pos[3]) * 0.75), 2)), world_pos)
-                            phys:ApplyForceCenter(phys:GetMass() * phys:GetVelocity() * -0.001)   //dampen very small bit for airboats
+                            phys:ApplyForceCenter(phys:GetMass() * phys:GetVelocity() * -0.001)   --dampen very small bit for airboats
                         else
                             phys:ApplyForceOffset(Vector(0, 0, phys:GetMass() * (math.min(((waterHeight - world_pos[3]) * 0.2), 3))), world_pos)
-                            phys:ApplyForceCenter(phys:GetMass() * phys:GetVelocity() * -0.003)   //dampen a bit
+                            phys:ApplyForceCenter(phys:GetMass() * phys:GetVelocity() * -0.003)   --dampen a bit
                         end
                         phys:AddAngleVelocity(phys:GetAngleVelocity() * -0.01)
                         prop_inwater = true
-                        //debugoverlay.Sphere(world_pos, 10, 0.1)
+                        --debugoverlay.Sphere(world_pos, 10, 0.1)
                     end
                 end
 

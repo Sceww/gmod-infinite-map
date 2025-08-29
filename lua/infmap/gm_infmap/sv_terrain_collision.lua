@@ -1,4 +1,4 @@
-// this file handles the collision for the terrain
+-- this file handles the collision for the terrain
 InfMap.chunk_table = InfMap.chunk_table or {}
 
 local function try_invalid_chunk(chunk, filter)
@@ -16,10 +16,10 @@ end
 
 local function update_chunk(ent, chunk, oldchunk)
 	if IsValid(ent) and !InfMap.filter_entities(ent) and ent:IsSolid() then
-		// remove chunks that dont have anything in them
+		-- remove chunks that dont have anything in them
 		try_invalid_chunk(oldchunk)
 
-		// chunk already exists, dont make another
+		-- chunk already exists, dont make another
 		if IsValid(InfMap.chunk_table[InfMap.ezcoord(chunk)]) then return end
 
 		local e = ents.Create("infmap_terrain_collider")
@@ -40,7 +40,7 @@ local function resetAll()
 	constraint.Weld(e, game.GetWorld(), 0, 0, 0)
 	InfMap.prop_update_chunk(e, Vector())
 
-	// spawn chunks
+	-- spawn chunks
 	for k, v in ipairs(ents.GetAll()) do
 		if !v.CHUNK_OFFSET then continue end
 		update_chunk(v, v.CHUNK_OFFSET)
@@ -51,10 +51,10 @@ hook.Add("EntityRemoved", "infmap_infgen_terrain", function(ent)
 	try_invalid_chunk(ent.CHUNK_OFFSET, ent)
 end)
 
-// handles generating chunk collision
+-- handles generating chunk collision
 hook.Add("PropUpdateChunk", "infmap_infgen_terrain", function(ent, chunk, oldchunk)
 	update_chunk(ent, chunk, oldchunk)
-	// remove ents too far below
+	-- remove ents too far below
 	if chunk[3] <= -100 then
 		print("Force removing stray", ent)
 		SafeRemoveEntity(ent)

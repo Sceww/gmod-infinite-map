@@ -18,7 +18,7 @@ end
 
 function ENT:SetReferenceData(ent, chunk)
     self:SetReferenceParent(ent)
-    self.REFERENCE_DATA = {parent = ent, chunk = chunk, chunk_offset = ent.CHUNK_OFFSET + chunk}    //1 = ent, 2 = world chunk, 3 = local chunk
+    self.REFERENCE_DATA = {parent = ent, chunk = chunk, chunk_offset = ent.CHUNK_OFFSET + chunk}    --1 = ent, 2 = world chunk, 3 = local chunk
 end
 
 function ENT:InitializePhysics(convexes)
@@ -37,19 +37,19 @@ function ENT:InitializeClient(parent)
         return
     end
 
-    //self:SetModel(parent:GetModel())
-    //self:SetCollisionGroup(parent:GetCollisionGroup())
-    //self:SetSolid(SOLID_VPHYSICS) 
-    //self:SetMoveType(MOVETYPE_VPHYSICS)
+    --self:SetModel(parent:GetModel())
+    --self:SetCollisionGroup(parent:GetCollisionGroup())
+    --self:SetSolid(SOLID_VPHYSICS) 
+    --self:SetMoveType(MOVETYPE_VPHYSICS)
 
     local phys = parent:GetPhysicsObject()
-    if !phys:IsValid() then // no custom physmesh, bail
+    if !phys:IsValid() then -- no custom physmesh, bail
         self:PhysicsInit(SOLID_VPHYSICS)
         return 
     end
     
     local convexes = phys:GetMesh()
-    if !convexes then   // no convexes, bail
+    if !convexes then   -- no convexes, bail
         self:PhysicsInit(SOLID_VPHYSICS)
         return
     end

@@ -1,4 +1,4 @@
-// metatable fuckery
+-- metatable fuckery
 local EntityMT = FindMetaTable("Entity")
 local VehicleMT = FindMetaTable("Vehicle")
 local PhysObjMT = FindMetaTable("PhysObj")
@@ -70,7 +70,7 @@ function EntityMT:GetBonePosition(index)
 	return pos, ang
 end
 
-// get setentity data since theres no GetEntity
+-- get setentity data since theres no GetEntity
 EntityMT.InfMap_SetEntity = EntityMT.InfMap_SetEntity or EntityMT.SetEntity
 function EntityMT:SetEntity(str, ent)
 	self.SET_ENTITIES = self.SET_ENTITIES or {}
@@ -85,7 +85,7 @@ end
 
 EntityMT.InfMap_Spawn = EntityMT.InfMap_Spawn or EntityMT.Spawn
 function EntityMT:Spawn()
-	if IsValid(self) and (self:IsConstraint() or self:GetClass() == "phys_spring" or self:GetClass() == "keyframe_rope") then	// elastic isnt considered a constraint..?
+	if IsValid(self) and (self:IsConstraint() or self:GetClass() == "phys_spring" or self:GetClass() == "keyframe_rope") then	-- elastic isnt considered a constraint..?
 		unfuck_keyvalue(self, "attachpoint")
 		unfuck_keyvalue(self, "springaxis")
 		unfuck_keyvalue(self, "slideaxis")
@@ -153,7 +153,7 @@ function PhysObjMT:CalculateForceOffset(impulse, pos)
 end
 
 PhysObjMT.InfMap_SetMaterial = PhysObjMT.InfMap_SetMaterial or PhysObjMT.SetMaterial
-function PhysObjMT:SetMaterial(mat)	// if a mat is set it will seperate qphysics and vphysics on terrain entities, disable it
+function PhysObjMT:SetMaterial(mat)	-- if a mat is set it will seperate qphysics and vphysics on terrain entities, disable it
 	if IsValid(self:GetEntity()) and !InfMap.disable_pickup[self:GetEntity():GetClass()] then 
 		return self:InfMap_SetMaterial(mat)
 	end
@@ -161,23 +161,23 @@ end
 
 /*************** Vehicle Metatable *****************/
 
-// these 3 functions cause stack overflow since vehicle is dirived from the entity metatable
-//VehicleMT.InfMap_GetPos = VehicleMT.InfMap_GetPos or VehicleMT.GetPos
-//function VehicleMT:GetPos()
-//	return InfMap.unlocalize_vector(self:InfMap_GetPos(), self.CHUNK_OFFSET)
-//end
+-- these 3 functions cause stack overflow since vehicle is dirived from the entity metatable
+--VehicleMT.InfMap_GetPos = VehicleMT.InfMap_GetPos or VehicleMT.GetPos
+--function VehicleMT:GetPos()
+--	return InfMap.unlocalize_vector(self:InfMap_GetPos(), self.CHUNK_OFFSET)
+--end
 
-//VehicleMT.InfMap_LocalToWorld = VehicleMT.InfMap_LocalToWorld or VehicleMT.LocalToWorld
-//function VehicleMT:LocalToWorld(pos)
-//	return InfMap.unlocalize_vector(self:InfMap_LocalToWorld(pos), self.CHUNK_OFFSET)
-//end
-//
-//VehicleMT.InfMap_WorldToLocal = VehicleMT.InfMap_WorldToLocal or VehicleMT.WorldToLocal
-//function VehicleMT:WorldToLocal(pos)
-//	return self:InfMap_WorldToLocal(pos - InfMap.unlocalize_vector(Vector(), self.CHUNK_OFFSET))
-//end
+--VehicleMT.InfMap_LocalToWorld = VehicleMT.InfMap_LocalToWorld or VehicleMT.LocalToWorld
+--function VehicleMT:LocalToWorld(pos)
+--	return InfMap.unlocalize_vector(self:InfMap_LocalToWorld(pos), self.CHUNK_OFFSET)
+--end
+--
+--VehicleMT.InfMap_WorldToLocal = VehicleMT.InfMap_WorldToLocal or VehicleMT.WorldToLocal
+--function VehicleMT:WorldToLocal(pos)
+--	return self:InfMap_WorldToLocal(pos - InfMap.unlocalize_vector(Vector(), self.CHUNK_OFFSET))
+--end
 
-// im unsure why this is the only exception
+-- im unsure why this is the only exception
 VehicleMT.InfMap_SetPos = VehicleMT.InfMap_SetPos or VehicleMT.SetPos
 function VehicleMT:SetPos(pos)
 	local chunk_pos, chunk_offset = InfMap.localize_vector(pos)
@@ -238,12 +238,12 @@ end
 
 /**************** Other Functions ********************/
 
-// infinite map.. nothing can be outside the world!
+-- infinite map.. nothing can be outside the world!
 function util.IsInWorld(pos)
 	return true
 end
 
-// faster lookup
+-- faster lookup
 local istable = istable
 local IsEntity = IsEntity
 local function modify_trace_data(orig_data, trace_func, extra)
@@ -251,18 +251,18 @@ local function modify_trace_data(orig_data, trace_func, extra)
 	for k, v in pairs(orig_data) do
 		data[k] = v
 	end
-	// #1 localize start and end position of trace
+	-- #1 localize start and end position of trace
 	local start_pos, start_offset = InfMap.localize_vector(data.start)
 
 	data.start = start_pos
 	data.endpos = data.endpos - InfMap.unlocalize_vector(Vector(), start_offset)
-	// #2 create filter and only hit entities in your chunk
+	-- #2 create filter and only hit entities in your chunk
 	local old_filter = data.filter
 	if !old_filter then 
 		data.filter = function(e) 
 			return e.CHUNK_OFFSET == start_offset
 		end
-	elseif IsEntity(old_filter) then // rip efficiency
+	elseif IsEntity(old_filter) then -- rip efficiency
 		data.filter = function(e)
 			return e.CHUNK_OFFSET == start_offset and e != old_filter
 		end 
@@ -275,13 +275,13 @@ local function modify_trace_data(orig_data, trace_func, extra)
 			end
 			return e.CHUNK_OFFSET == start_offset
 		end
-	else // must be function
+	else -- must be function
 		data.filter = function(e)
 			return old_filter(e) and e.CHUNK_OFFSET == start_offset
 		end
 	end
 
-	// #3, unlocalize hit positions to designated chunks
+	-- #3, unlocalize hit positions to designated chunks
 	local hit_data = trace_func(data, extra)
 	hit_data.HitPos = InfMap.unlocalize_vector(hit_data.HitPos, start_offset)
 	hit_data.StartPos = InfMap.unlocalize_vector(hit_data.StartPos, start_offset)
@@ -292,14 +292,14 @@ local function modify_trace_data(orig_data, trace_func, extra)
 		elseif InfMap.disable_pickup[hit_ent:GetClass()] then
 			hit_data.Entity = game.GetWorld()
 			hit_data.HitWorld = true
-			hit_data.NonHitWorld = false // what the fuck garry?
-			hit_data.HitPos = hit_data.HitPos + hit_data.HitNormal	// spawning props sometimes clip
+			hit_data.NonHitWorld = false -- what the fuck garry?
+			hit_data.HitPos = hit_data.HitPos + hit_data.HitNormal	-- spawning props sometimes clip
 		end
 	end
 	return hit_data
 end
 
-// no need to detour GetEyeTrace or util.GetPlayerTrace as it uses the already detoured functions
+-- no need to detour GetEyeTrace or util.GetPlayerTrace as it uses the already detoured functions
 InfMap.TraceLine = InfMap.TraceLine or util.TraceLine
 function util.TraceLine(data)
 	return modify_trace_data(data, InfMap.TraceLine)
@@ -315,15 +315,15 @@ function util.TraceEntity(data, ent)
 	return modify_trace_data(data, InfMap.TraceEntity, ent)
 end
 
-// blast damage is internal to C++, convert to local space
+-- blast damage is internal to C++, convert to local space
 InfMap.BlastDamage = InfMap.BlastDamage or util.BlastDamage
 function util.BlastDamage(inflictor, attacker, damageOrigin, ...)
 	local chunk_pos, chunk_offset = InfMap.localize_vector(damageOrigin)
 	return InfMap.BlastDamage(inflictor, attacker, chunk_pos, ...)
 end
 
-// M: Find functions Courtesy of LiddulBOFH! Thanks bro!
-// This and below are potentially usable, faster than running FindInBox on a single chunk (provided the entities to search are tracked by chunk updates)
+-- M: Find functions Courtesy of LiddulBOFH! Thanks bro!
+-- This and below are potentially usable, faster than running FindInBox on a single chunk (provided the entities to search are tracked by chunk updates)
 
 InfMap.FindInBox = InfMap.FindInBox or ents.FindInBox
 function ents.FindInBox(v1, v2)
@@ -353,7 +353,7 @@ end
 
 InfMap.FindInCone = InfMap.FindInCone or ents.FindInCone
 function ents.FindInCone(pos, normal, radius, angle_cos)
-	// not sure why, but findincone uses a box instead of sphere
+	-- not sure why, but findincone uses a box instead of sphere
 	local entlist = ents.FindInBox(pos - Vector(radius, radius, radius), pos + Vector(radius, radius, radius))
 	local results = {}
 
@@ -370,17 +370,17 @@ function gmsave.ShouldSaveEntity(ent, t)
 	return InfMap.ShouldSaveEntity(ent, t) and !InfMap.disable_pickup[t.classname]
 end
 
-// network serverside particle effects to client
+-- network serverside particle effects to client
 InfMap.ParticleEffect = InfMap.ParticleEffect or ParticleEffect
 function ParticleEffect(name, pos, ang, parent)
-	InfMap.ParticleEffect(name, Vector(0, 0, -math.huge), ang, parent)	// cache the particle (this is stupid)
-	// send particle to client after cached
+	InfMap.ParticleEffect(name, Vector(0, 0, -math.huge), ang, parent)	-- cache the particle (this is stupid)
+	-- send particle to client after cached
 	timer.Simple(0, function()
 		for _, ply in ipairs(player.GetAll()) do
-			local localpos = InfMap.unlocalize_vector(pos, -ply.CHUNK_OFFSET) //convert world to client local
+			local localpos = InfMap.unlocalize_vector(pos, -ply.CHUNK_OFFSET) --convert world to client local
 			net.Start("infmap_particle", true)
 				net.WriteString(name)
-				net.WriteFloat(localpos[1])	// networking vectors are stupid and have overflow issues
+				net.WriteFloat(localpos[1])	-- networking vectors are stupid and have overflow issues
 				net.WriteFloat(localpos[2])
 				net.WriteFloat(localpos[3])
 				net.WriteAngle(ang)
@@ -390,15 +390,15 @@ function ParticleEffect(name, pos, ang, parent)
 	end)
 end
 
-// wiremod internally clamps setpos, lets unclamp it...
+-- wiremod internally clamps setpos, lets unclamp it...
 hook.Add("Initialize", "infmap_wire_detour", function()
-	if WireLib then	// wiremod unclamp
+	if WireLib then	-- wiremod unclamp
 		function WireLib.clampPos(pos)
 			return Vector(pos)
 		end
 	end
 
-	if SF then	//starfall unclamp
+	if SF then	--starfall unclamp
 		function SF.clampPos(pos)
 			return pos 
 		end
@@ -407,9 +407,9 @@ end)
 
 /********** Hooks ***********/
 
-// disable picking up weapons/items in other 
+-- disable picking up weapons/items in other 
 local function can_pickup(ply, ent)
-	// when spawning, player weapons will be nil for 1 tick, allow pickup in all chunks
+	-- when spawning, player weapons will be nil for 1 tick, allow pickup in all chunks
 	local co1, co2 = ply.CHUNK_OFFSET, ent.CHUNK_OFFSET
 	if (co1 and co2 and co1 != co2) or InfMap.disable_pickup[ent:GetClass()] then
 		return false
@@ -420,7 +420,7 @@ hook.Add("PlayerCanPickupWeapon", "infmap_entdetour", can_pickup)
 hook.Add("PlayerCanPickupItem", "infmap_entdetour", can_pickup)
 hook.Add("GravGunPickupAllowed", "infmap_entdetour", can_pickup)
 
-// localize the toolgun beam
+-- localize the toolgun beam
 hook.Add("PreRegisterSWEP", "infmap_toolgundetour", function(SWEP, class)
     if class == "gmod_tool" then
 		SWEP.InfMap_DoShootEffect = SWEP.InfMap_DoShootEffect or SWEP.DoShootEffect
@@ -430,7 +430,7 @@ hook.Add("PreRegisterSWEP", "infmap_toolgundetour", function(SWEP, class)
 	end
 end)
 
-// explosions should not damage things in other chunks
+-- explosions should not damage things in other chunks
 hook.Add("EntityTakeDamage", "infmap_explodedetour", function(ply, dmg)
 	if !(dmg:IsExplosionDamage() or dmg:IsDamageType(DMG_BURN)) then return end
 	local dmg_offset = dmg:GetInflictor().CHUNK_OFFSET
@@ -440,7 +440,7 @@ hook.Add("EntityTakeDamage", "infmap_explodedetour", function(ply, dmg)
 	end
 end)
 
-// bullets may be created in world space, translate to local
+-- bullets may be created in world space, translate to local
 hook.Add("EntityFireBullets", "infmap_bulletdetour", function(ent, bullet)
 	local pos, chunk = InfMap.localize_vector(bullet.Src)
 	if chunk != Vector() then

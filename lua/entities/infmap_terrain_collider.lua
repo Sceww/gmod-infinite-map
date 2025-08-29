@@ -77,18 +77,18 @@ function ENT:Initialize()
     self:SetMoveType(MOVETYPE_NONE)
     self:EnableCustomCollisions(true)
     self:DrawShadow(false)
-    self:SetRenderMode(RENDERMODE_NONE) // dont render, but do network
+    self:SetRenderMode(RENDERMODE_NONE) -- dont render, but do network
     self:AddSolidFlags(FSOLID_FORCE_WORLD_ALIGNED)
     self:AddFlags(FL_STATICPROP)
-    //self:AddFlags(FL_DONTTOUCH)
+    --self:AddFlags(FL_DONTTOUCH)
     local phys = self:GetPhysicsObject()
     if IsValid(phys) then
         phys:EnableMotion(false)
-        phys:SetMass(50000)  // max weight should help a bit with the physics solver
+        phys:SetMass(50000)  -- max weight should help a bit with the physics solver
         phys:AddGameFlag(FVPHYSICS_CONSTRAINT_STATIC)
         phys:AddGameFlag(FVPHYSICS_NO_SELF_COLLISIONS)
     elseif SERVER then
-        SafeRemoveEntity(self)  // physics object doesnt exist (no points)
+        SafeRemoveEntity(self)  -- physics object doesnt exist (no points)
     end
 end
 

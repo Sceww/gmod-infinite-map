@@ -1,7 +1,7 @@
 -----------------------------------------------
 ---Simplex Noise
--- Original Java Source: http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
--- Original Author: https://raw.githubusercontent.com/weswigham/simplex/master/lua/src/simplex.lua
+-- Original Java Source: http:--staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
+-- Original Author: https:--raw.githubusercontent.com/weswigham/simplex/master/lua/src/simplex.lua
 -- (most) Original comments included
 -----------------------------------------------
 

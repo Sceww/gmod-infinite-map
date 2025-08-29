@@ -1,6 +1,6 @@
 # How to create an infinite map
 * I apologize in advance for the shitty documentation, ive never written any before
-* Feel free to contact me on the [Discord](https://discord.gg/cmQvg2AHgP) if you need help or have any questions implementing this API
+* Feel free to contact me on the [Discord](https:--discord.gg/cmQvg2AHgP) if you need help or have any questions implementing this API
 
 
 
@@ -8,7 +8,7 @@
 1. Install the infmap base
 2. Create a map using hammer
 	- Note: If you create a world brush it will loop infinitely in all directions
-	- See the [Explanation video](https://youtu.be/NPsxeRELlNY) to see why this occurs
+	- See the [Explanation video](https:--youtu.be/NPsxeRELlNY) to see why this occurs
 	- I suggest just using an empty map with a skybox and adding your own LUA terrain
 3. Once your map is created, rename it so it has "infmap" as the second word in your map. This allows the api to distinguish whether to initialize or not
 	- Examples: gm_infmap_backrooms; gm_infmap_void; sb_infmap_planets, etc.

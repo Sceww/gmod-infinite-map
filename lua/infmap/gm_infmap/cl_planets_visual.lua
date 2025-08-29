@@ -1,4 +1,4 @@
-// renders the spheres around the planets
+-- renders the spheres around the planets
 local atmosphere = Material("infmap/atmosphere")
 hook.Add("PostDrawOpaqueRenderables", "infmap_planet_render", function()
 	local render = render
@@ -8,7 +8,7 @@ hook.Add("PostDrawOpaqueRenderables", "infmap_planet_render", function()
 	local color = InfMap.unlocalize_vector(EyePos(), LocalPlayer().CHUNK_OFFSET)[3] / 20000 / 175
 	if color < 0.1 then return end
 
-	// reset lighting so planets dont do weird flashing shit
+	-- reset lighting so planets dont do weird flashing shit
 	local amb = render.GetAmbientLightColor() * 2
 	render.SetLocalModelLights()
 	render.SetModelLighting(1, amb[1], amb[2], amb[3])
@@ -37,13 +37,13 @@ hook.Add("PostDrawOpaqueRenderables", "infmap_planet_render", function()
 				planet_res = 10
 			end
 			
-			// draw planet
+			-- draw planet
 			local texture = planetdata["OutsideMaterial"]
-			texture:SetFloat("$alpha", color)	// draw planets as transparent when going up
+			texture:SetFloat("$alpha", color)	-- draw planets as transparent when going up
 			render.SetMaterial(texture)
 			render.DrawSphere(InfMap.unlocalize_vector(Vector(), final_offset), radius, planet_res, planet_res)
 
-			// clouds!!1!
+			-- clouds!!1!
 			local cloudinfo = planetdata["Clouds"]
 			if cloudinfo then
 				local clouds = cloudinfo[1]
@@ -64,14 +64,14 @@ hook.Add("PostDrawOpaqueRenderables", "infmap_planet_render", function()
 	end
 end)
 
-// renders the space skybox texture
+-- renders the space skybox texture
 local render = render
 local sky = Material("infmap/sky")
-hook.Add("PostDraw2DSkyBox", "infmap_space_skybox", function()	//draw bigass plane
+hook.Add("PostDraw2DSkyBox", "infmap_space_skybox", function()	--draw bigass plane
 	local eyepos = EyePos()
 	local color = InfMap.unlocalize_vector(eyepos, LocalPlayer().CHUNK_OFFSET)[3] / (20000 * 175)
 
-	// set transparency
+	-- set transparency
 	render.OverrideDepthEnable(true, false)
 	sky:SetFloat("$alpha", color)
 	render.SetMaterial(sky)

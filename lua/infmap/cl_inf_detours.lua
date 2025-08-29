@@ -1,4 +1,4 @@
-// metatable fuckery
+-- metatable fuckery
 local EntityMT = FindMetaTable("Entity")
 local PhysObjMT = FindMetaTable("PhysObj")
 
@@ -17,7 +17,7 @@ function EntityMT:GetPos()
 	return InfMap.unlocalize_vector(self:InfMap_GetPos(), self.CHUNK_OFFSET - LocalPlayer().CHUNK_OFFSET)
 end
 
-// clamp setpos or it spams console
+-- clamp setpos or it spams console
 EntityMT.InfMap_SetPos = EntityMT.InfMap_SetPos or EntityMT.SetPos
 function EntityMT:SetPos(pos)
 	local pos = clamp_vector(pos, InfMap.source_bounds[1])
@@ -46,7 +46,7 @@ end
 EntityMT.InfMap_GetBonePosition = EntityMT.InfMap_GetBonePosition or EntityMT.GetBonePosition
 function EntityMT:GetBonePosition(index)
 	local pos, ang = self:InfMap_GetBonePosition(index)
-	if !pos or !ang then // bones are weird
+	if !pos or !ang then -- bones are weird
 		return pos, ang 
 	end	
 
@@ -86,7 +86,7 @@ end
 
 InfMap.FindInCone = InfMap.FindInCone or ents.FindInCone
 function ents.FindInCone(pos, normal, radius, angle_cos)
-	// not sure why, but findincone uses a box instead of sphere
+	-- not sure why, but findincone uses a box instead of sphere
 	local entlist = ents.FindInBox(pos - Vector(radius, radius, radius), pos + Vector(radius, radius, radius))
 	local results = {}
 	for k,v in ipairs(entlist) do
@@ -96,14 +96,14 @@ function ents.FindInCone(pos, normal, radius, angle_cos)
 	return results
 end
 
-// clamp setpos or it spams console
+-- clamp setpos or it spams console
 PhysObjMT.InfMap_SetPos = PhysObjMT.InfMap_SetPos or PhysObjMT.SetPos
 function PhysObjMT:SetPos(pos)
 	local pos = clamp_vector(pos, InfMap.source_bounds[1])
 	return self:InfMap_SetPos(pos)
 end
 
-// traces shouldnt appear when shot from other chunks
+-- traces shouldnt appear when shot from other chunks
 hook.Add("EntityFireBullets", "infmap_detour", function(ent, data)
 	if ent.CHUNK_OFFSET != LocalPlayer().CHUNK_OFFSET then
 		data.Tracer = 0
@@ -111,8 +111,8 @@ hook.Add("EntityFireBullets", "infmap_detour", function(ent, data)
 	end
 end)
 
-// traceline
-// faster lookup
+-- traceline
+-- faster lookup
 local istable = istable
 local IsEntity = IsEntity
 local function modify_trace_data(orig_data, trace_func, extra)
@@ -121,13 +121,13 @@ local function modify_trace_data(orig_data, trace_func, extra)
 		data[k] = v
 	end
 	local start_offset = LocalPlayer().CHUNK_OFFSET or Vector()
-	// #2 create filter and only hit entities in your chunk
+	-- #2 create filter and only hit entities in your chunk
 	local old_filter = data.filter
 	if !old_filter then 
 		data.filter = function(e) 
 			return e.CHUNK_OFFSET == start_offset
 		end
-	elseif IsEntity(old_filter) then // rip efficiency
+	elseif IsEntity(old_filter) then -- rip efficiency
 		data.filter = function(e)
 			return e.CHUNK_OFFSET == start_offset and e != old_filter
 		end 
@@ -140,7 +140,7 @@ local function modify_trace_data(orig_data, trace_func, extra)
 			end
 			return e.CHUNK_OFFSET == start_offset
 		end
-	else // must be function
+	else -- must be function
 		data.filter = function(e)
 			return old_filter(e) and e.CHUNK_OFFSET == start_offset
 		end
@@ -151,28 +151,28 @@ local function modify_trace_data(orig_data, trace_func, extra)
 		if InfMap.disable_pickup[hit_ent:GetClass()] then
 			hit_data.Entity = game.GetWorld()
 			hit_data.HitWorld = true
-			hit_data.NonHitWorld = false // what the fuck garry?
+			hit_data.NonHitWorld = false -- what the fuck garry?
 		end
 	end
 	return hit_data
 end
-// traceline
+-- traceline
 InfMap.TraceLine = InfMap.TraceLine or util.TraceLine
 function util.TraceLine(data)
 	return modify_trace_data(data, InfMap.TraceLine)
 end
-// hull traceline
+-- hull traceline
 InfMap.TraceHull = InfMap.TraceHull or util.TraceHull
 function util.TraceHull(data)
 	return modify_trace_data(data, InfMap.TraceHull)
 end
-// entity traceline
+-- entity traceline
 InfMap.TraceEntity = InfMap.TraceEntity or util.TraceEntity
 function util.TraceEntity(data, ent)
 	return modify_trace_data(data, InfMap.TraceEntity, ent)
 end
 
-// particle detour
+-- particle detour
 net.Receive("infmap_particle", function()
 	local name = net.ReadString()
 	local pos = Vector(net.ReadFloat(), net.ReadFloat(), net.ReadFloat())

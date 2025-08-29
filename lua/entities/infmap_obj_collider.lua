@@ -57,7 +57,7 @@ if CLIENT then
     end
 end
 
-// physics solver optimization
+-- physics solver optimization
 hook.Add("PropUpdateChunk", "infmap_obj_optimizecollision", function(ent, chunk, oldchunk)
     if SERVER then
         if InfMap.filter_entities(ent) then return end
@@ -79,7 +79,7 @@ hook.Add("PropUpdateChunk", "infmap_obj_optimizecollision", function(ent, chunk,
     else
         if ent != LocalPlayer() then return end
         for k, v in ipairs(ents.FindByClass("infmap_obj_collider")) do
-            if !v.TryOptimizeCollision then continue end    // wtf?
+            if !v.TryOptimizeCollision then continue end    -- wtf?
             v:TryOptimizeCollision()
         end
     end
