@@ -1,21 +1,26 @@
+local color_red = Color(255,0,0)
+
 -- obj parser
 local yield_quota = 3000
 local max_collision_verts = 7500
 InfMap.parsed_collision_data = InfMap.parsed_collision_data or {}
 InfMap.parsed_objects = InfMap.parsed_objects or {}
 
+local function vColtoInt(vfloatstring)
+	return tonumber(vfloatstring) * 255
+end
 -- creates collisions for chunk .objs (defined later)
 local build_object_collision
 
 -- client generates meshes & materials from obj data
 local materials_path = "materials/infmap/"
-local function parse_client_data(object_name, faces, materials, shaders)
+local function parse_client_data(object_name, faces, materials, usesVertexLighting, shaders)
 	print("Started parsing " .. object_name)
 	
 	-- parse mtl file for materials
 	local mtl_data = {}
-	local mtl = file.Read("maps/" .. object_name .. ".mtl.ain", "GAME") 
-	or file.Read("maps/" .. object_name .. ".mtl", "GAME")
+	local mtl = file.Read("maps/" .. object_name .. ".mtl.ain", "GAME")  	-- ex. object.mtl.ain
+	or file.Read("maps/" .. object_name .. ".mtl", "GAME")					-- 
 
 	if mtl then
 		local mtl_split = string.Split(mtl, "\n")
@@ -28,9 +33,26 @@ local function parse_client_data(object_name, faces, materials, shaders)
 			local material_data = string.Trim(data[1])
 			if first == "newmtl" then 
 				material = material_data
-			elseif first == "map_Kd" then
+			elseif first == "map_Kd" then -- creating material
 				local material_path = materials_path .. material_data
-				mtl_data[material] = Material(material_path, "vertexlitgeneric mips smooth noclamp" .. shaders)	-- alphatest
+
+				-- check if usesVertexLighting
+				if usesVertexLighting[material] then
+					-- 1. load texture from disk
+					local diskMat = Material(material_path, "noclamp mips smooth")
+					-- 2. create new material (NOTE: DOES NOT CURRENTLY SUPPORT TRANSPARENCY)
+					local vertexlitMat = CreateMaterial(material_data, "UnlitGeneric", {
+						["$basetexture"] = "error",  -- replace this texture...
+						["$vertexcolor"] = 1,
+						-- ["$vertexalpha"] = 1,
+						-- ["$nocull"] = 1, 
+						["$model"] = 1, 
+					})
+					vertexlitMat:SetTexture("$basetexture", diskMat:GetTexture("$basetexture"))
+					mtl_data[material] = vertexlitMat
+				else -- The object doesn't use vertexlighting, so use the normal stuff.
+					mtl_data[material] = Material(material_path, "vertexlitgeneric mips smooth noclamp" .. shaders)	-- alphatest
+				end
 			elseif first == "bump" and mtl_data[material] then
 				local material_path = materials_path .. material_data
 				local bumpmap = Material(material_path, "mips smooth noclamp")
@@ -94,11 +116,11 @@ local function parse_server_data(faces)
 
 			add_data(chunk1, face1, face2, face3)
 
-			if chunk2 != chunk1 then
+			if chunk2 ~= chunk1 then
 				add_data(chunk2, face1, face2, face3)
 			end
 
-			if chunk3 != chunk2 and chunk3 != chunk1 then
+			if chunk3 ~= chunk2 and chunk3 ~= chunk1 then
 				add_data(chunk3, face1, face2, face3)
 			end
 		end
@@ -141,7 +163,7 @@ end
 
 -- Main parsing function
 local mesh_tangent = {1, 1, 1, 1}
-function InfMap.parse_obj(object_name, translation, client_only, shaders)
+function InfMap.parse_obj(object_name, translation, client_only, shaders) -- translation: matrix
 	if SERVER and client_only == 1 then return end
 
 	-- clear all collision data
@@ -149,7 +171,7 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 
 	-- actual obj file
 	local obj = file.Read("maps/" .. object_name .. ".obj.ain", "GAME")
-	or file.Read("maps/" .. object_name .. ".obj", "GAME")
+	or 			file.Read("maps/" .. object_name .. ".obj", "GAME")
 
 	if !obj then 
 		print("Couldn't find .obj file when parsing " .. object_name .. "! (is the file in maps/ ?)")
@@ -159,15 +181,29 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 	local rotation = translation:GetAngles()
 
 	-- time to parse
+	-- Order of an obj:
+	--[[ 	1. o 	  <MESHNAME>
+			2. v 	  (xyz)
+			3. vn 	  (xyz)
+			4. vt 	  (xy)
+			5. s	  0
+			6. usemtl <MATERIAL>
+			7. f  	  i/i/i i/i/i i/i/i i/i/i
+	]]
 	local coro = coroutine.create(function()
+		local meshName = "NIL OBJECT"
+		local using_vertex_lighting = false
+
 		local err, str = pcall(function()
 		local group = 0
 		local material = 0
-		local material_name = ""
+		-- local material_name = "" -- equivalent to materials[materialIndex]
 		local vertices = {}
 		local uvs = {}
 		local normals = {}
+		local colors = {}
 		local materials = {}
+		local uses_vertex_lighting = {}
 		local faces = {}
 
 		-- sort the data
@@ -177,10 +213,16 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 			-- get data from line
 			local line_data = string.Split(split_obj[i], " ")
 			local first = table.remove(line_data, 1)
-
-			-- vertex processing
+			-- vertex processing (but actually never first.)
 			if first == "v" then
 				table.insert(vertices[group], translation * Vector(-tonumber(line_data[1]), tonumber(line_data[3]), tonumber(line_data[2])))
+				if line_data[4] and CLIENT then -- object uses vertex colors to represent lighting as told by the inclusion of an extra float value in v.
+					using_vertex_lighting = true
+					table.insert(colors[group], Color( vColtoInt(line_data[4]), vColtoInt(line_data[5]), vColtoInt(line_data[6]) ))
+				elseif CLIENT then
+					table.insert(colors[group], color_white)
+				end
+					
 
 			-- only client uses uvs and normals
 			elseif first == "vt" and CLIENT then
@@ -204,17 +246,27 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 				local max_verts = #vertices[group]
 				local max_uvs = #uvs[group]
 				local max_normals = #normals[group]
+				local max_colors = #colors[group] -- Might be totally unneeded?
 
 				-- n gon support
 				for i = 3, #line_data do
 					-- get our vertex indices data
-					local vertex1 = string.Split(line_data[i - 1], "/")
+					local vertex1 = string.Split(line_data[i - 1], "/")  -- indices
 					local vertex2 = string.Split(line_data[1], "/")
 					local vertex3 = string.Split(line_data[i], "/")
 
-					local vertex1_pos = vertices[group][unfuck_negative(vertex1[1], max_verts)]
-					local vertex2_pos = vertices[group][unfuck_negative(vertex2[1], max_verts)]
+					local vertex1_pos = vertices[group][unfuck_negative(vertex1[1], max_verts)] -- vertex1[1]: number. but maybe this returns a Vector?
+					local vertex2_pos = vertices[group][unfuck_negative(vertex2[1], max_verts)] -- Vertex color is stored right next to the vertex.
 					local vertex3_pos = vertices[group][unfuck_negative(vertex3[1], max_verts)]
+
+					local v1_c = color_white
+					local v2_c = color_white
+					local v3_c = color_white
+					if CLIENT then
+						v1_c = colors[group][unfuck_negative(vertex1[1], max_verts)] or color_red
+						v2_c = colors[group][unfuck_negative(vertex2[1], max_verts)] or color_red
+						v3_c = colors[group][unfuck_negative(vertex3[1], max_verts)] or color_red
+					end
 
 					-- this should never be run, but just in case
 					--if !vertex1_pos or !vertex2_pos or !vertex3_pos then continue end
@@ -229,7 +281,8 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 						u = uv and  uv[1],
 						v = uv and -uv[2],	-- reverse triangle winding
 						normal = normals[group][unfuck_negative(vertex1[3], max_normals)],
-						userdata = mesh_tangent
+						userdata = mesh_tangent,
+						color = v1_c
 					}
 
 					uv = uvs[group][unfuck_negative(vertex2[2], max_uvs)]
@@ -238,7 +291,8 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 						u = uv and  uv[1],
 						v = uv and -uv[2],
 						normal = normals[group][unfuck_negative(vertex2[3], max_normals)],
-						userdata = mesh_tangent
+						userdata = mesh_tangent,
+						color = v2_c
 					}
 
 					uv = uvs[group][unfuck_negative(vertex3[2], max_uvs)]
@@ -247,26 +301,44 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 						u = uv and  uv[1],
 						v = uv and -uv[2],
 						normal = normals[group][unfuck_negative(vertex3[3], max_normals)],
-						userdata = mesh_tangent
+						userdata = mesh_tangent,
+						color = v3_c
 					}
 				end
-			elseif first == "usemtl" then -- material
+			elseif first == "usemtl" then -- 
 				material = material + 1
+				
+				-- material_name = string.Trim(line_data[1])
+				
 				faces[material] = {}
 				materials[material] = string.Trim(line_data[1])
-				--material_name = string.Trim(line_data[1])
-			elseif first == "o" or first == "g" then
+
+				if using_vertex_lighting then
+					uses_vertex_lighting[materials[material]] = true -- {["Landscape"] = true, ["Road"] = true, ["Dummy"] = false}
+				else
+					uses_vertex_lighting[materials[material]] = false
+				end
+			elseif first == "o" or first == "g" then -- Tends to be the first thing to be defined.
+				-- if using_vertex_lighting then -- print previous mesh info
+				-- 	print("\tVertex Lighting data found!, enabling vertex lighting for ".. meshName)
+				-- end
+			-- reset using_vertex_lighting
+			using_vertex_lighting = false
+			meshName = line_data[1]
+			-- print("new obj: "..meshName)
 				if group == 0 then -- incase it doesnt exist
 					group = group + 1
 					vertices[group] = {}
 					uvs[group] = {}
 					normals[group] = {}
+					colors[group] = {}	
 				end
 			elseif first == "mtllib" then	-- increment groups of tris
 				group = group + 1
 				vertices[group] = {}
 				uvs[group] = {}
 				normals[group] = {}
+				colors[group] = {}
 			end
 
 			table.Empty(line_data) line_data = nil
@@ -276,11 +348,11 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 			end
 		end
 
-		if CLIENT and client_only != 2 then
-			parse_client_data(object_name, faces, materials, shaders or "")
+		if CLIENT and client_only ~= 2 then
+			parse_client_data(object_name, faces, materials, uses_vertex_lighting, shaders or "")
 		end
 
-		if client_only != 1 then
+		if client_only ~= 1 then
 			parse_server_data(faces)
 			hook.Add("PropUpdateChunk", "infmap_obj_spawn", build_object_collision)
 		end
@@ -292,6 +364,7 @@ function InfMap.parse_obj(object_name, translation, client_only, shaders)
 		table.Empty(normals) normals = nil
 		table.Empty(faces) faces = nil
 		table.Empty(materials) materials = nil
+		table.Empty(colors) colors = nil
 
 		print("Finished parsing " .. object_name)
 		end)
@@ -315,11 +388,13 @@ if CLIENT then
 		color = Vector(2, 2, 2),
 		dir = Vector(1, 1, 1):GetNormalized(),
 	}}
-	local default_material = CreateMaterial("infmap_objdefault", "VertexLitGeneric", {
+	local default_material = CreateMaterial("infmap_objdefault", "VertexLitGeneric", { -- previously VertexLitGeneric
 		["$basetexture"] = "dev/graygrid", 
-		["$model"] = 1, 
+		-- ["$vertexcolor"] = 1,
+		-- ["$vertexalpha"] = 1,
 		["$nocull"] = 1,
-		["$alpha"] = 1
+		-- ["$alpha"] = 1,
+		["$model"] = 1, 
 	})
 	hook.Add("PostDrawOpaqueRenderables", "infmap_obj_render", function()
 		local sun = util.GetSunInfo()
@@ -341,7 +416,7 @@ end
 
 build_object_collision = function(ent, chunk)
 	if SERVER and InfMap.filter_entities(ent) then return end
-	if CLIENT and ent != LocalPlayer() then return end
+	if CLIENT and ent ~= LocalPlayer() then return end
 
 	local chunk_coord = InfMap.ezcoord(chunk)
 	if IsValid(InfMap.parsed_objects[chunk_coord]) then return end
@@ -364,7 +439,7 @@ build_object_collision = function(ent, chunk)
 			local collider_len = #chunk_data
 			local collider_count = 1
 			for _, collider in ipairs(ents.FindByClass("infmap_obj_collider")) do
-				if collider.CHUNK_OFFSET != LocalPlayer().CHUNK_OFFSET then continue end
+				if collider.CHUNK_OFFSET ~= LocalPlayer().CHUNK_OFFSET then continue end
 				if collider:GetPhysicsObject():IsValid() then continue end
 				
 				-- weird hack to prevent null physobjs on client
@@ -384,3 +459,4 @@ build_object_collision = function(ent, chunk)
 		end)
 	end
 end
+

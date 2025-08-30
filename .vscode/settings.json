@@ -13,5 +13,10 @@
     "Lua.diagnostics.disable": [
         "duplicate-set-field"
     ],
-    "Lua.workspace.checkThirdParty": false
+    "Lua.workspace.checkThirdParty": false,
+    "Lua.diagnostics.globals": [
+        "e2function",
+        "__e2setcost",
+        "E2Lib"
+    ]
 }
