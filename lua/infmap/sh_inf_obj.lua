@@ -1,4 +1,4 @@
-local color_red = Color(255,0,0)
+local color_red = Color(255,0,0) -- fallback color.
 
 -- obj parser
 local yield_quota = 3000
