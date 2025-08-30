@@ -1,4 +1,5 @@
 # GMod Infinite Map [![made with - mee++](https:--img.shields.io/badge/made_with-mee%2B%2B-2ea44f)](https:--) ![Discord](https:--img.shields.io/discord/962140720192421928?label=Discord) 
+## Now with added baked lighting support via vertex color!
 
 ### Overview
 This is a garrys mod addon that adds a map to the game called gm_infinite, as the title suggests this map visually appears infinite
